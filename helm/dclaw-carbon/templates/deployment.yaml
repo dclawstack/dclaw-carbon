@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "dclaw-carbon.fullname" . }}
+  labels:
+    {{- include "dclaw-carbon.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "dclaw-carbon.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "dclaw-carbon.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "dclaw-carbon.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            - name: DATABASE_URL
+              value: "postgresql+asyncpg://{{ .Values.postgresql.auth.username }}:{{ .Values.postgresql.auth.password }}@{{ include "dclaw-carbon.fullname" . }}-postgresql:5432/{{ .Values.postgresql.auth.database }}"
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
